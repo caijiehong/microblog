@@ -1,0 +1,11 @@
+-   var total = posts.length
+-   posts.forEach(function(post, index) {
+    !{index % 3 == 0 ? '<div class="row">' : ''}
+    .span4
+        h2
+            a(href='/u/#{post.user}')= post.user
+        p
+            small= post.time
+        p= post.post
+    !{index % 3 == 2 || index == total - 1 ? '</div>' : ''}
+-   });

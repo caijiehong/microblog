@@ -1,0 +1,34 @@
+extends layout
+
+block content
+    form#formReg.form-horizontal(method='post')
+        fieldset
+            legend 用户登入
+            .control-group
+                label.control-label(for='username') 用户名
+                .controls
+                    input#username.input-xlarge(type='text', name='username', value='#{username}')
+            .control-group
+                label.control-label(for='password') 口令
+                .controls
+                    input#password.input-xlarge(type='password', name='password')
+            .form-actions
+                button#btnReg.btn.btn-primary(type='submit') 登入
+    script(type='text/javascript')
+        $(document).ready(function(){
+            $('#formReg').submit(function(){
+                var username = $.trim($('#username').val());
+                $('#username').val(username);
+                if(!username){
+                    $('#msgErr').html('用户名不能为空').show();
+                    return false;
+                }
+                var password = $('#password').val();
+                var passwordRpt = $('#password-repeat').val();
+                if(password.length < 6){
+                    $('#msgErr').html('无效的口令').show();
+                    return false;
+                }
+                return true;
+            });
+        })

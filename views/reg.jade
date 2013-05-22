@@ -1,0 +1,43 @@
+extends layout
+
+block content
+    form#formReg.form-horizontal(method='post')
+        fieldset
+            legend 用户注册
+            .control-group
+                label.control-label(for='username') 用户名
+                .controls
+                    input#username.input-xlarge(type='text', name='username', value='#{username}')
+                    p.help-block 你的账户名称，用于登录和显示。
+            .control-group
+                label.control-label(for='password') 口令
+                .controls
+                    input#password.input-xlarge(type='password', name='password')
+            .control-group
+                label.control-label(for='password-repeat') 重复输入口令
+                .controls
+                    input#password-repeat.input-xlarge(type='password', name='password-repeat')
+            .form-actions
+                button#btnReg.btn.btn-primary(type='submit') 注册
+    script(type='text/javascript')
+        $(document).ready(function(){
+            $('#formReg').submit(function(){
+                var username = $.trim($('#username').val());
+                $('#username').val(username);
+                if(!username){
+                    $('#msgErr').html('用户名不能为空').show();
+                    return false;
+                }
+                var password = $('#password').val();
+                var passwordRpt = $('#password-repeat').val();
+                if(password.length < 6){
+                    $('#msgErr').html('无效的口令').show();
+                    return false;
+                }
+                if(password != passwordRpt){
+                    $('#msgErr').html('两次输入的口令不一致').show();
+                    return false;
+                }
+                return true;
+            });
+        })

@@ -1,0 +1,47 @@
+!!! transitional
+html
+    head
+        title
+        link(rel='stylesheet', href='../stylesheets/bootstrap.css')
+        style(type='text/css')
+            body {
+                padding-top: 60px;
+                padding-bottom: 40px;
+            }
+        link(href='../stylesheets/bootstrap-responsive.css', rel='stylesheet')
+        script(src='/javascripts/jquery-2.0.0.js')
+        script(src='/javascripts/bootstrap.js')
+    body
+        .navbar.navbar-fixed-top
+            .navbar-inner
+                .container
+                    a.btn.btn-navbar(data-toggle='collapse', data-target='.nav-collapse')
+                        span.icon-bar
+                        span.icon-bar
+                        span.icon-bar
+                    a.brand(href='/') Microblog
+                    .nav-collapse
+                        ul.nav
+                            li.active
+                                a(href='/') 首页
+                            if !session.user
+                                li
+                                    a(href='/home/login') 登入
+                                li
+                                    a(href='/home/reg') 注册
+                            else
+                                li
+                                    a(href='/home/logout') 登出
+        #container.container
+            #msgSuc.alert.alert-success(style='display:none')= typeof(success) != 'undefined'?success:''
+            #msgErr.alert.alert-error(style='display:none')= typeof(error) != 'undefined'?error:''
+            block content
+            hr
+            footer
+                p
+                    a(href='http://www.byvoid.com/', target='_blank') BYVoid | 2012
+    script(type='text/javascript')
+        $(document).ready(function(){
+            if($('#msgSuc').html())$('#msgSuc').show();
+            if($('#msgErr').html())$('#msgErr').show();
+        })

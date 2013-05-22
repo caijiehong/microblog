@@ -1,0 +1,15 @@
+extends layout
+
+block content
+    - if(session.user){
+        include say
+    - }else{
+        .hero-unit
+            h1 欢迎来到 Microblog
+            p Microblog 是一个基于 Node.js 的微博系统。
+            p
+                a.btn.btn-primary.btn-large(href='/home/login') 登录
+                &nbsp
+                a.btn.btn-large(href='/home/reg') 立即注册
+    - }
+    include post
