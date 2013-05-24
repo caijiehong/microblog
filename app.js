@@ -2,8 +2,7 @@ var express = require('express')
     , http = require('http')
     , path = require('path');
 
-var MongoStore = require('connect-mongo');
-var settings = require('./Settings.js');
+var settings = require('./settings.js');
 var controllers = {};
 
 var app = express();
@@ -49,9 +48,9 @@ function urlRouter(req, res, controller, action, id, ispost) {
             ctr[action].get(req, res, id);
         }
     } catch (err) {
-        console.error(err);
+        console.error(err.stack)
         res.status(404);
-        res.render('layout', {error: err});
+        res.render('layout', {error: err.stack});
     }
 }
 

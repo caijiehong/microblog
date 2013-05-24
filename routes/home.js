@@ -1,28 +1,33 @@
-var User = require('../models/user')
-    , Post = require('../models/post');
+var User = require('../models/user');
+var Post = require('../models/post');
 var crypto = require('crypto');
 
 exports.index = new (function () {
     this.get = function (req, res) {
         render(req, res);
-    }
+    };
+
     this.post = function (req, res) {
-        var user = req.session.user;
+        var user = User.userInfo(req);
         if (user) {
-            var post = new Post(user, req.body.post);
+            var post = new Post(user.username, req.body.post);
             post.save(function (err) {
                 render(req, res, err, '发表成功');
+                return;
             });
         } else {
             return res.redirect('/home/login');
         }
-    }
-    function render(req, res, error, success) {
-        var user = req.session.user;
+    };
 
-        Post.get(user || null, function (err, posts) {
+    function render(req, res, error, success) {
+        var user = User.userInfo(req);
+        var username = user ? user.username : '';
+
+        Post.get(username, function (err, posts) {
+            console.log(posts)
             res.render('index', {
-                title: user,
+                title: username,
                 posts: posts,
                 error: error,
                 success: success
@@ -30,6 +35,7 @@ exports.index = new (function () {
         });
     }
 })();
+
 exports.reg = {
     get: function (req, res) {
         res.render('reg', { username: '' });
@@ -45,13 +51,10 @@ exports.reg = {
         var md5 = crypto.createHash('md5');
         var password = md5.update(req.body.password).digest('base64');
 
-        var newUser = new User({
-            name: req.body.username,
-            password: password
-        });
+        var newUser = new User.User(req.body.username, User.userSource.WEB, password);
 
         //检查用户名是否已经存在
-        User.get(newUser.name, function (err, user) {
+        User.getUser(newUser.username, function (err, user) {
             if (user)
                 err = 'Username already exists.';
             if (err) {
@@ -64,7 +67,7 @@ exports.reg = {
                     res.render('reg', { error: err, username: req.body.username});
                     return;
                 }
-                req.session.user = newUser;
+                User.initSession(req, newUser);
                 res.locals.success = '注册成功';
                 res.redirect('/');
             });
@@ -82,24 +85,33 @@ exports.login = {
         var password = md5.update(req.body.password).digest('base64');
         var username = req.body.username;
 
-        User.get(username, function (err, user) {
-            if (!user) {
-                res.render('login', {error: '用户不存在', username: username });
-                return;
+        var user = new User.User(username, User.userSource.WEB, password);
+        User.login(req, res, user, function (rel) {
+            switch (rel) {
+                case User.loginResult.success:
+                {
+                    res.locals.success = '登入成功';
+                    res.redirect('/');
+                    break;
+                }
+                case User.loginResult.userNotExist:
+                {
+                    res.render('login', {error: '用户不存在', username: username });
+                    break;
+                }
+                case User.loginResult.pwdNotMatch:
+                {
+                    res.render('login', {error: '用户口令错误', username: username });
+                    break;
+                }
             }
-            if (user.password != password) {
-                res.render('login', {error: '用户口令错误', username: username });
-            }
-            req.session.user = user.name;
-            res.locals.success = '登入成功';
-            res.redirect('/');
         });
     }
 };
 
 exports.logout = {
     get: function (req, res) {
-        req.session.user = null;
+        User.logout(req, res);
         res.redirect('/');
     }
 }
