@@ -14,6 +14,10 @@ block content
                     input#password.input-xlarge(type='password', name='password')
             .form-actions
                 button#btnReg.btn.btn-primary(type='submit') 登入
+                br
+                img#imgDouban(src='/img/login_with_douban_24.png',style='padding-top:10px;cursor:pointer')
+                input#hidDoubanKey(type='hidden', value='#{doubanKey}')
+                input#hidDomain(type='hidden', value='#{domain}')
     script(type='text/javascript')
         $(document).ready(function(){
             $('#formReg').submit(function(){
@@ -30,5 +34,12 @@ block content
                     return false;
                 }
                 return true;
+            });
+            $('#imgDouban').click(function(){
+                var url = 'https://www.douban.com/service/auth2/auth?'
+                            +'client_id='+$('#hidDoubanKey').val()
+                            +'&redirect_uri=http://'+$('#hidDomain').val()+'/home/douban'
+                            +'&response_type=code&scope=shuo_basic_r,shuo_basic_w,douban_basic_common';
+                window.open(url, '_blank');
             });
         })

@@ -8,9 +8,12 @@ exports.User = User = function (username, source, password) {
 User.prototype.save = function save(callback) {
     // 存入 Mongodb 的文档
     var user = {
-        name: this.name,
-        password: this.password
+        username: this.username,
+        password: this.password,
+        source: this.source
+
     };
+    console.log('userToSave', user);
     mongodb.open(function (err, db) {
         if (err) {
             return callback(err);
@@ -22,7 +25,7 @@ User.prototype.save = function save(callback) {
                 return callback(err);
             }
             // 为 name 属性添加索引
-            collection.ensureIndex('name', {unique: true});
+            collection.ensureIndex('username', {unique: true});
             // 写入 user 文档
             collection.insert(user, {safe: true}, function (err, user) {
                 mongodb.close();
