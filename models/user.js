@@ -1,4 +1,5 @@
 var mongodb = require('./db');
+
 exports.User = User = function (username, source, password) {
     this.username = username;
     this.password = password;
@@ -47,7 +48,7 @@ exports.getUser = getUser = function (username, callback) {
                 return callback(err);
             }
             // 查找 name 属性为 username 的文档
-            collection.findOne({name: username}, function (err, doc) {
+            collection.findOne({username: username}, function (err, doc) {
                 mongodb.close();
                 if (doc) {
                     callback(err, doc);
@@ -80,29 +81,12 @@ exports.login = function (req, res, user, onLogin) {
                 onLogin(loginResult.pwdNotMatch);
                 return;
             } else {
-                initSession(req, userDb);
                 onLogin(loginResult.success);
                 return
             }
         })
     } else {
-        initSession(req, user);
         onLogin(loginResult.success);
         return
     }
-}
-
-exports.logout = function (req, res) {
-    req.session.user = null;
-}
-
-exports.userInfo = function (req) {
-    return req.session.user;
-}
-
-exports.initSession = initSession = function (req, user) {
-    req.session.user = {
-        username: user.username,
-        source: user.source
-    };
 }

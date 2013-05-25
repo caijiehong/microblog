@@ -17,6 +17,11 @@ block content
                 label.control-label(for='password-repeat') 重复输入口令
                 .controls
                     input#password-repeat.input-xlarge(type='password', name='password-repeat')
+            .control-group
+                label.control-label(for='verifycode') 验证码
+                .controls
+                    input#verifycode.input-xlarge(type='text', name='verifycode', maxlength='4')
+                    img#imgVerify(src='/home/verify', style='padding-left:10px;cursor:pointer', title='刷新')
             .form-actions
                 button#btnReg.btn.btn-primary(type='submit') 注册
     script(type='text/javascript')
@@ -39,5 +44,8 @@ block content
                     return false;
                 }
                 return true;
+            });
+            $('#imgVerify').click(function(){
+               $('#imgVerify').attr('src', '/home/verify?'+ Math.random())
             });
         })

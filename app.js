@@ -1,6 +1,7 @@
 var express = require('express')
     , http = require('http')
-    , path = require('path');
+    , path = require('path')
+    , session = require('./models/session');
 
 var settings = require('./settings.js');
 var controllers = {};
@@ -28,7 +29,7 @@ app.configure('development', function () {
 
 
 function urlRouter(req, res, controller, action, id, ispost) {
-    res.locals.session = req.session;
+    res.locals.session = session.get(req);
 
     var controller = controller || 'home';
     var action = action || 'index';

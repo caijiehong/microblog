@@ -3,6 +3,8 @@ var Post = require('../models/post');
 var crypto = require('crypto');
 var https = require('https');
 var setting = require('../settings');
+var Canvas = require('canvas');
+var session = require('../models/session');
 
 exports.index = new (function () {
     this.get = function (req, res) {
@@ -10,7 +12,7 @@ exports.index = new (function () {
     };
 
     this.post = function (req, res) {
-        var user = User.userInfo(req);
+        var user = session.get(req).userInfo();
         if (user) {
             var post = new Post(user.username, req.body.post);
             post.save(function (err) {
@@ -22,7 +24,7 @@ exports.index = new (function () {
     };
 
     function render(req, res, error, success) {
-        var user = User.userInfo(req);
+        var user = session.get(req).userInfo();
         var username = user ? user.username : '';
 
         Post.get(username, function (err, posts) {
@@ -36,60 +38,80 @@ exports.index = new (function () {
     }
 })();
 
-exports.reg = {
-    get: function (req, res) {
-        res.render('reg', { username: '' });
-    },
-    post: function (req, res) {
+exports.reg = new (function(){
+    this.get = function (req, res) {
+        render(res, '');
+    }
+
+    this.post = function(req, res){
+        var verifycode = req.body.verifycode;
+        var username = req.body.username;
+
+        if(!session.get(req).checkVerifyCode(verifycode)){
+            res.locals.error = '验证码有误';
+            render(res, username);
+            return;
+        }
+
         //检验用户两次输入的口令是否一致
         if (req.body['password-repeat'] != req.body['password']) {
-            res.render('reg', { error: '两次输入的口令不一致', username: req.body.username});
+            res.locals.error = '两次输入的口令不一致';
+            render(res, username);
             return;
         }
 
         //生成口令的散列值
         var md5 = crypto.createHash('md5');
         var password = md5.update(req.body.password).digest('base64');
-
-        var newUser = new User.User(req.body.username, User.userSource.WEB, password);
+        var username = req.body.username;
+        var newUser = new User.User(username, User.userSource.WEB, password);
 
         //检查用户名是否已经存在
         User.getUser(newUser.username, function (err, user) {
-            if (user)
-                err = 'Username already exists.';
-            if (err) {
-                res.render('reg', { error: err, username: req.body.username});
+            if (user){
+                res.locals.error = 'Username already exists';
+                render(res, username);
                 return;
             }
             //如果不存在则新增用户
             newUser.save(function (err) {
-                if (err) {
-                    res.render('reg', { error: err, username: req.body.username});
-                    return;
-                }
-                User.initSession(req, newUser);
+
+                session.get(req).initUser(username, User.userSource.WEB);
                 res.locals.success = '注册成功';
                 res.redirect('/');
             });
         });
     }
-};
+
+    function render(res, username){
+        res.render('reg', { username: username });
+    }
+})();
 
 exports.login = new (function () {
     this.get = function (req, res) {
         render(req, res, '');
     };
+
     this.post = function (req, res) {
+        var username = req.body.username;
+
+        var verifycode = req.body.verifycode;
+        if(!session.get(req).checkVerifyCode(verifycode)){
+            res.locals.error = '验证码有误';
+            render(req, res, username);
+            return;
+        }
         //生成口令的散列值
         var md5 = crypto.createHash('md5');
         var password = md5.update(req.body.password).digest('base64');
-        var username = req.body.username;
 
         var user = new User.User(username, User.userSource.WEB, password);
         User.login(req, res, user, function (rel) {
             switch (rel) {
                 case User.loginResult.success:
                 {
+                    session.get(req).initUser(username, User.userSource.WEB);
                     res.locals.success = '登入成功';
                     res.redirect('/');
                     break;
@@ -117,7 +139,7 @@ exports.login = new (function () {
 
 exports.logout = {
     get: function (req, res) {
-        User.logout(req, res);
+        session.get(req).clearUser();
         res.redirect('/');
     }
 }
@@ -131,19 +153,51 @@ exports.douban = {
             + '&redirect_uri=http://' + setting.domain + '/home/douban'
             + '&grant_type=authorization_code'
             + '&code=' + code;
-        console.log(path);
         httpsPost('www.douban.com', path, null, function (err, data) {
-            if(!err){
+            if (!err) {
                 var json = JSON.parse(data);
-                var user = new User.User(json.douban_user_name, User.userSource.DOUBAN, '');
-                User.initSession(req, user);
-            }else{
+
+                session.get(req).initUser(json.douban_user_name, User.userSource.DOUBAN);
+            } else {
                 console.log(err);
             }
             res.redirect('/');
         });
     }
 }
+
+exports.verify = new (function () {
+    this.get = function (req, res) {
+
+        var canvas = new Canvas(100, 30),
+            ctx = canvas.getContext('2d'),
+            items = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPRSTUVWXYZ23456789'.split(''),
+            vcode = '',
+            textColors = ['#FD0', '#6c0', '#09F', '#f30', '#aaa', '#3cc', '#cc0',
+                '#A020F0', '#FFA500', '#A52A2A', '#8B6914', '#FFC0CB', '#90EE90'];
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, 100, 30);
+        ctx.font = 'bold 30px sans-serif';
+
+        ctx.globalAlpha = .8;
+        for (var i = 0; i < 4; i++) {
+            var rnd = Math.random();
+            var item = Math.round(rnd * (items.length - 1));
+            var color = Math.round(rnd * (textColors.length - 1));
+            ctx.fillStyle = textColors[color];
+            ctx.fillText(items[item], 5 + i * 23, 25);
+            vcode += items[item];
+        }
+
+        session.get(req).setVerifyCode(vcode);
+
+        canvas.toBuffer(function (err, buf) {
+            res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': buf.length });
+            res.end(buf);
+        });
+    }
+})();
 
 function httpsPost(hostname, path, postdata, onReceive) {
 
@@ -168,3 +222,5 @@ function httpsPost(hostname, path, postdata, onReceive) {
         onReceive(e, null);
     });
 }
+
+
