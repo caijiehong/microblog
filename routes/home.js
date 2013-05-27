@@ -15,7 +15,7 @@ exports.index = new (function () {
         var user = session.get(req).userInfo();
         if (user) {
             var post = new Post(user.username, req.body.post);
-            post.save(function (err) {
+            post.save(req, function (err) {
                 render(req, res, err, '发表成功');
             });
         } else {
@@ -27,7 +27,8 @@ exports.index = new (function () {
         var user = session.get(req).userInfo();
         var username = user ? user.username : '';
 
-        Post.get(username, function (err, posts) {
+        Post.get(req, username, function (err, posts) {
+
             res.render('index', {
                 title: username,
                 posts: posts,
@@ -38,16 +39,16 @@ exports.index = new (function () {
     }
 })();
 
-exports.reg = new (function(){
+exports.reg = new (function () {
     this.get = function (req, res) {
         render(res, '');
     }
 
-    this.post = function(req, res){
+    this.post = function (req, res) {
         var verifycode = req.body.verifycode;
         var username = req.body.username;
 
-        if(!session.get(req).checkVerifyCode(verifycode)){
+        if (!session.get(req).checkVerifyCode(verifycode)) {
             res.locals.error = '验证码有误';
             render(res, username);
             return;
@@ -67,14 +68,14 @@ exports.reg = new (function(){
         var newUser = new User.User(username, User.userSource.WEB, password);
 
         //检查用户名是否已经存在
-        User.getUser(newUser.username, function (err, user) {
-            if (user){
+        User.getUser(req, newUser.username, function (err, user) {
+            if (user) {
                 res.locals.error = 'Username already exists';
                 render(res, username);
                 return;
             }
             //如果不存在则新增用户
-            newUser.save(function (err) {
+            newUser.save(req, function (err) {
 
                 session.get(req).initUser(username, User.userSource.WEB);
                 res.locals.success = '注册成功';
@@ -83,7 +84,7 @@ exports.reg = new (function(){
         });
     }
 
-    function render(res, username){
+    function render(res, username) {
         res.render('reg', { username: username });
     }
 })();
@@ -97,7 +98,7 @@ exports.login = new (function () {
         var username = req.body.username;
 
         var verifycode = req.body.verifycode;
-        if(!session.get(req).checkVerifyCode(verifycode)){
+        if (!session.get(req).checkVerifyCode(verifycode)) {
             res.locals.error = '验证码有误';
             render(req, res, username);
             return;

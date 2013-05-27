@@ -1,6 +1,7 @@
 var express = require('express')
     , http = require('http')
     , path = require('path')
+    , domain = require('domain')
     , session = require('./models/session');
 
 var settings = require('./settings.js');
@@ -27,6 +28,24 @@ app.configure('development', function () {
     app.locals.pretty = true;
 });
 
+
+//引入一个domain的中间件，将每一个请求都包裹在一个独立的domain中
+//domain来处理异常
+app.use(function (req,res, next) {
+    console.log('domain of me');
+//    var d = domain.create();
+//    //监听domain的错误事件
+//    d.on('error', function (err) {
+//        logger.error(err);
+//        res.statusCode = 500;
+//        res.json({sucess:false, messag: '服务器异常'});
+//        d.dispose();
+//    });
+//
+//    d.add(req);
+//    d.add(res);
+//    d.run(next);
+});
 
 function urlRouter(req, res, controller, action, id, ispost) {
     res.locals.session = session.get(req);
@@ -66,6 +85,7 @@ app.get('/:controller/:action?/:id?', function (req, res) {
 app.post('/:controller/:action?/:id?', function (req, res) {
     urlRouter(req, res, req.params.controller, req.params.action, req.params.id, true);
 });
+
 
 exports.listen = listen = function(port){
     app.listen(port);
